@@ -968,7 +968,7 @@ gdc.handleInlineDrawing = function() {
 gdc.handleImage = function(imageElement) {
 
   // Check to see if we are using the EETech version of image creation.
-  if(!config.EETEchImages) {
+  if(!gdc.eetechImages) {
     // Figure out image file information for the link.
     var img = imageElement.asInlineImage();
 
@@ -1001,7 +1001,7 @@ gdc.handleImage = function(imageElement) {
     } else {
       gdc.writeStringToBuffer('<newline>![alt_text](' + imagePath +' "image_tooltip")<newline>');
     }
-  } else if (config.EETechImages && gdc.isHtml) {
+  } else if (gdc.eetechImages && gdc.isHtml) {
     handleEETechImages(imageElement);
   }
 
