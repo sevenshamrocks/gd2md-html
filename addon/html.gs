@@ -56,13 +56,6 @@ html.doHtml = function(config) {
   // Get the body elements.
   var elements = gdc.getElements();
 
-  // Set image name if applicable
-  if(config.EETEchImages) {
-    var ui = SpreadsheetApp.getUi();
-    var userImageName = ui.prompt("Please enter the base image title. Include underscores. Do not include numbers or the extension.");
-    html.imageName = userImageName.getResponseText();
-  }
-
   // Main loop to walk through all the document's child elements.
   for (var i = 0, z = elements.length; i < z; i++) {
     html.handleChildElement(elements[i]);
@@ -80,7 +73,11 @@ html.doHtml = function(config) {
     gdc.info += ' inline image link in generated source and store images to your server.';
     gdc.info += ' NOTE: Images in exported zip file from Google Docs may not appear in ';
     gdc.info += ' the same order as they do in your doc. Please check the images!\n';
-  }
+    if(gdc.eetechImages) {
+      // Set image name if applicable
+      var userImageName = ui.prompt("Please enter the base image title. Include underscores. Do not include numbers or the extension.");
+      html.imageName = userImageName.getResponseText();
+    }
   
   if (gdc.hasFootnotes) {
     gdc.info += '\n* Footnote support in HTML is alpha: please check your footnotes.';
