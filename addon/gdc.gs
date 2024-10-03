@@ -1054,10 +1054,8 @@ gdc.handleEETechImages = function(imageElement) {
 
   // Get/create image name
   
-  
-
   //  Add src=”imagename” to image tag
-  gdc.writeStringToBuffer(' src="https://www.control.com/uploads/articles/' + imageName + '_' + gdc.imageCounter + fileType + '"');
+  gdc.writeStringToBuffer(' src="https://www.control.com/uploads/articles/' + html.imageName + '_' + gdc.imageCounter + fileType + '"');
 
   // Add border styling and close tag
   gdc.writeStringToBuffer(' style="border: 1px solid #CDCDCD; max-width: 800px; max-height: 550px;" />');
