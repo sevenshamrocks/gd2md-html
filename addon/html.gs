@@ -40,7 +40,10 @@ var html = html || {
 
   // I think we need to track these independently because the previous/next sibling won't always be a list item, thus not giving reliable nesting level. 
   listNestingLevel: 0,
-  inListItem: false
+  inListItem: false,
+
+  //Name to use for image generation in EETech add-on.
+  imageName: 'image'
 };
 
 html.tablePrefix = '  ';
@@ -52,6 +55,13 @@ html.doHtml = function(config) {
   gdc.config(config);
   // Get the body elements.
   var elements = gdc.getElements();
+
+  // Set image name if applicable
+  if(config.EETEchImages) {
+    var ui = SpreadsheetApp.getUi();
+    var userImageName = ui.prompt("Please enter your name");
+    html.imageName = userImageName.getResponseText();
+  }
 
   // Main loop to walk through all the document's child elements.
   for (var i = 0, z = elements.length; i < z; i++) {
