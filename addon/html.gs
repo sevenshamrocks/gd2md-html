@@ -59,7 +59,7 @@ html.doHtml = function(config) {
   // Set image name if applicable
   if(config.EETEchImages) {
     var ui = SpreadsheetApp.getUi();
-    var userImageName = ui.prompt("Please enter your name");
+    var userImageName = ui.prompt("Please enter the base image title. Include underscores. Do not include numbers or the extension.");
     html.imageName = userImageName.getResponseText();
   }
 
