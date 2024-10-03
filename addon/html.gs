@@ -570,8 +570,7 @@ html.maybeOpenList = function (listItem) {
     if (html.nestingLevel >= html.listNestingLevel) {
       html.openList();
     } 
-  } else
-  if (previousType == DocumentApp.ElementType.LIST_ITEM) {
+  } else {
     // Open a new list if nesting level increases.
     if (html.nestingLevel > previous.getNestingLevel()) {
     html.openList();
