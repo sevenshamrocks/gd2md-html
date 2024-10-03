@@ -1020,8 +1020,15 @@ gdc.handleEETechImages = function(imageElement) {
 
     // Find and add image caption
     var headingCaption = imageElement.getNextSibling();
-    
+    //What is returned?
+    gdc.writeStringToBuffer(headingCaption);
 
+
+    var altText = "Some. Text.";
+    var locPeriod = altText.indexOf(".");
+    altText = altText.subString(0,locPeriod+1);
+
+    gdc.writeStringToBuffer('alttext="' + altText + '"');
     
     //Need to generate image title which corresponds to upload
     //  Can grab from title of document? 
