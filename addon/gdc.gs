@@ -1020,11 +1020,7 @@ gdc.handleEETechImages = function(imageElement) {
 
     // Find and add image caption
     var headingCaption = imageElement.getNextSibling();
-    //What is returned?
-    gdc.writeStringToBuffer(headingCaption);
-
-
-    var altText = "Some. Text.";
+    var altText = headingCaption.getText();
     var locPeriod = altText.indexOf(".");
     altText = altText.subString(0,locPeriod+1);
 
