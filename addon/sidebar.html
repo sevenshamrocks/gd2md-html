@@ -132,6 +132,10 @@ Use reckless mode (no alerts)
 <label>
 <input type="checkbox" id="target_blank">
 Add target="_blank" to HTML links
+</label><br>
+<label>
+<input type="checkbox" id="EETech_Images">
+Enable EETech Image Generation
 </label>
 
 <!-- Docs, bug link. -->
@@ -184,6 +188,7 @@ For more details, click the Docs link above.`
     config.suppressInfo = false;
     config.recklessMode = false;
     config.targetBlank = false;
+    config.EETechImages = false;
 
     // Config settings from UI.
     if (document.getElementById('demote_headings').checked) {
@@ -206,6 +211,9 @@ For more details, click the Docs link above.`
     }
     if (document.getElementById('target_blank').checked) {
       config.targetBlank = true;
+    }
+    if (document.getElementById('EETech_images').checked) {
+      config.EETechImages = true;
     }
 };
     
