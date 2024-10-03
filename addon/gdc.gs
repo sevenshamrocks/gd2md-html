@@ -1024,7 +1024,7 @@ gdc.handleEETechImages = function(imageElement) {
     var locPeriod = altText.indexOf(".") + 1;
     altText = altText.subString(0,locPeriod);
 
-    gdc.writeStringToBuffer('alttext="' + altText + '"');
+    gdc.writeStringToBuffer('alt="' + altText + '"');
     
     //Need to generate image title which corresponds to upload
     //  Can grab from title of document? 
