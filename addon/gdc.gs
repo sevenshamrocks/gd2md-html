@@ -129,6 +129,7 @@ gdc.config = function(config) {
   }
   if (config.eetechImages === true) {
     gdc.eetechImages = true;
+    gdc.defaultImagePath = 'https://www.control.com/uploads/articles/';
   }
 };
 
@@ -973,18 +974,7 @@ gdc.handleImage = function(imageElement) {
   // Put image markup here regardless of whether the image was stored or not.
   gdc.hasImages = true; // So we can provide a note at the top.
 
-  // Figure out image file information for the link.
-  var img = imageElement.asInlineImage();
-  var imgBlob = img.getBlob();
-  var contentType = imgBlob.getContentType();
-  var fileType = '';
-  if (contentType === 'image/jpeg') {
-    fileType = '.jpg';
-  } else if (contentType === 'image/png') {
-    fileType = '.png';
-  } else if (contentType === 'image/gif') {
-    fileType = '.gif';
-  }
+  var filetype = gdc.getFiletype(imageElement);
 
   // Create image path/file name: 
   // Note that Google Docs export does not necessarily put them in order!
@@ -1010,35 +1000,34 @@ gdc.handleEETechImages = function(imageElement) {
 
   gdc.imageCounter++; // Update image counter at the outset so that we aren't starting from 0
 
-  // Open image tag
-  gdc.writeStringToBuffer('\n<img');
-
   // Get caption from the next line, trim the image attribution, and assign to the alternate text
   var altText = imageElement.getParent().getNextSibling().getText();
   altText = altText.substring(0, altText.indexOf('.') + 1);
-  gdc.writeStringToBuffer(' alt="' + altText + '"');
 
   // Way of grabbing filetype. This might actually work. 
-  var contentType = imageElement.asInlineImage().getBlob().getContentType();
-  var fileType = '';
-  if (contentType === 'image/jpeg') {
-    fileType = '.jpg';
-  } else if (contentType === 'image/png') {
-    fileType = '.png';
-  } else if (contentType === 'image/gif') {
-    fileType = '.gif';
-  }
+  var fileType = gdc.getFiletype(imageElement);
 
-  // Defaulting filetype to png. Assuming this will be the regular type by default. May need a way to check. 
-  //var fileType ='.png';
-
-  // Get/create image name
+  // Create image path. Not strictly necessary.
+  var imagePath = gdc.defaultImagePath + html.imageName + '_' + gdc.imageCounter + fileType;
   
-  //  Add src=”imagename” to image tag
-  gdc.writeStringToBuffer(' src="https://www.control.com/uploads/articles/' + html.imageName + '_' + gdc.imageCounter + fileType + '"');
+  //  Open image tag, add alt text, add src information, image name, image counter, file type, additional styling, and close the tag. Phew. 
+  gdc.writeStringToBuffer('\n<img alt="'+ altText
+                          + '" src="' + imagePath
+                          + '" style="border: 1px solid #CDCDCD; max-width: 800px; max-height: 550px;" />');  
+};
 
-  // Add border styling and close tag
-  gdc.writeStringToBuffer(' style="border: 1px solid #CDCDCD; max-width: 800px; max-height: 550px;" />');  
+// Get and return the filetype
+gdc.getFiletype = function(img) {
+  var contentType = img.asInlineImage().getBlob().getContentType();
+  if (contentType === 'image/jpeg') {
+    return '.jpg';
+  } else if (contentType === 'image/png') {
+    return '.png';
+  } else if (contentType === 'image/gif') {
+    return '.gif';
+  } else {
+    return '';
+  }
 };
 
 gdc.isBullet = function(glyphType) {
