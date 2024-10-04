@@ -38,10 +38,11 @@
 // NOTE: Check these before publishing! (and remove β if appropriate)
 var DEBUG = false;
 var LOG = false;
-var GDC_TITLE = 'Docs to Markdown'; // formerly GD2md-html, formerly gd2md-html
-var GDC_VERSION = '1.0β39'; // based on 1.0β33
+var GDC_TITLE = 'EETech Docs to Markdown'; // formerly GD2md-html, formerly gd2md-html
+var GDC_VERSION = '1.0γ01'; // based on 1.0β33
 
 // Version notes: significant changes (latest on top). (files changed)
+// - 1.0γ01 (4 Oct. 2024): Added support for automatically generating the image link for Control.com. This is a significant fork that will not be merged into the main branch. Be careful about updates. (gdc, html, sidebar)
 // - 1.0β39 (2 Oct. 2024): Changed how closing of lists and list items are handled to fix nested lists and embedded paragraphs in HTML lists. (gdc, html)
 // - 1.0β38 (30 Sep. 2024): Added support for Markdown Checkboxes (gdc)
 // - 1.0β37 (30 Sep. 2024): Modified how center/right alignment is handled. Placed inside html.handleHeading (gdc, html)
@@ -125,6 +126,9 @@ gdc.config = function(config) {
   }
   if (config.targetBlank === true) {
     gdc.targetBlank = true;
+  }
+  if (config.eetechImages === true) {
+    gdc.eetechImages = true;
   }
 };
 
@@ -966,91 +970,67 @@ gdc.handleInlineDrawing = function() {
 };
 
 gdc.handleImage = function(imageElement) {
+  // Put image markup here regardless of whether the image was stored or not.
+  gdc.hasImages = true; // So we can provide a note at the top.
 
-  // Check to see if we are using the EETech version of image creation.
-  if(!gdc.eetechImages) {
-    // Figure out image file information for the link.
-    var img = imageElement.asInlineImage();
-
-    var imgBlob = img.getBlob();
-    var contentType = imgBlob.getContentType();
-    var fileType = '';
-    if (contentType === 'image/jpeg') {
-      fileType = '.jpg';
-    } else if (contentType === 'image/png') {
-      fileType = '.png';
-    } else if (contentType === 'image/gif') {
-      fileType = '.gif';
-    }
-  
-    // Create image path/file name: 
-    // Note that Google Docs export does not necessarily put them in order!
-    // But there's no way to predict, so users will need to check.
-    gdc.imageCounter++;
-    var imagePath = gdc.defaultImagePath + 'image' + gdc.imageCounter +fileType;
-  
-    // Put image markup here regardless of whether the image was stored or not.
-    gdc.hasImages = true; // So we can provide a note at the top.
-    gdc.alert('inline image link here (to ' + imagePath
-      + '). Store image on your image server and adjust path/filename/extension if necessary.');
-    if (gdc.isHTML) {
-      // Width is an optional attribute for img tag, but let's leave the hint.
-      gdc.writeStringToBuffer('\n<img src="'
-        + imagePath
-        + '" width="" alt="alt_text" title="image_tooltip">\n');
-    } else {
-      gdc.writeStringToBuffer('<newline>![alt_text](' + imagePath +' "image_tooltip")<newline>');
-    }
-  } else if (gdc.eetechImages && gdc.isHtml) {
-    handleEETechImages(imageElement);
+  // Figure out image file information for the link.
+  var img = imageElement.asInlineImage();
+  var imgBlob = img.getBlob();
+  var contentType = imgBlob.getContentType();
+  var fileType = '';
+  if (contentType === 'image/jpeg') {
+    fileType = '.jpg';
+  } else if (contentType === 'image/png') {
+    fileType = '.png';
+  } else if (contentType === 'image/gif') {
+    fileType = '.gif';
   }
 
+  // Create image path/file name: 
+  // Note that Google Docs export does not necessarily put them in order!
+  // But there's no way to predict, so users will need to check.
+  gdc.imageCounter++;
+  var imagePath = gdc.defaultImagePath + 'image' + gdc.imageCounter +fileType;
+
+  gdc.alert('inline image link here (to ' + imagePath
+    + '). Store image on your image server and adjust path/filename/extension if necessary.');
+  if (gdc.isHTML) {
+    // Width is an optional attribute for img tag, but let's leave the hint.
+    gdc.writeStringToBuffer('\n<img src="'
+      + imagePath
+      + '" width="" alt="alt_text" title="image_tooltip">\n');
+  } else {
+    gdc.writeStringToBuffer('<newline>![alt_text](' + imagePath +' "image_tooltip")<newline>');
+  }
 };
 
 // Function for handling images for EETech upload
 gdc.handleEETechImages = function(imageElement) {
-    
-    //Need to open image tag
-    //Need to grab caption text from next element (h5)
-    //  Need to trim out image credit
-    //  Need to add to image tag
+  gdc.hasImages = true; // So we can provide a note at the top.
 
-    // Open image tag
-    gdc.WriteStringToBuffer('<img');
+  gdc.imageCounter++; // Update image counter at the outset so that we aren't starting from 0
 
-    // Find and add image caption
-    var headingCaption = imageElement.getNextSibling();
-    var altText = headingCaption.getText();
-    var locPeriod = altText.indexOf(".") + 1;
-    altText = altText.subString(0,locPeriod);
+  // Open image tag
+  gdc.writeStringToBuffer('\n<img');
 
-    gdc.writeStringToBuffer('alt="' + altText + '"');
-    
-    //Need to generate image title which corresponds to upload
-    //  Can grab from title of document? 
-    //    Grab
-    //    Change spaces to underscores
-    //    Add _ + “image counter”
-    //    Add .jpg/png (this will need to be consistent)
-    //  Manual enter option (enter image title convention)?
-    //    Way to enter title of images
-    //    Add _ + “image counter”
-    //    Add .jpg/png (this will need to be consistent)
+  // Get caption from the next line, trim the image attribution, and assign to the alternate text
+  var altText = imageElement.getParent().getNextSibling().getText();
+  altText = altText.substring(0, altText.indexOf('.') + 1);
+  gdc.writeStringToBuffer(' alt="' + altText + '"');
 
-    // Way of grabbing filetype. This might actually work. 
-    //var imgBlob = img.getBlob();
-    //var contentType = imgBlob.getContentType();
-    //var fileType = '';
-    //if (contentType === 'image/jpeg') {
-    //  fileType = '.jpg';
-    //} else if (contentType === 'image/png') {
-    //  fileType = '.png';
-    //} else if (contentType === 'image/gif') {
-    //  fileType = '.gif';
-    //}
+  // Way of grabbing filetype. This might actually work. 
+  var contentType = imageElement.asInlineImage().getBlob().getContentType();
+  var fileType = '';
+  if (contentType === 'image/jpeg') {
+    fileType = '.jpg';
+  } else if (contentType === 'image/png') {
+    fileType = '.png';
+  } else if (contentType === 'image/gif') {
+    fileType = '.gif';
+  }
 
   // Defaulting filetype to png. Assuming this will be the regular type by default. May need a way to check. 
-  var fileType ='.png';
+  //var fileType ='.png';
 
   // Get/create image name
   
@@ -1058,12 +1038,8 @@ gdc.handleEETechImages = function(imageElement) {
   gdc.writeStringToBuffer(' src="https://www.control.com/uploads/articles/' + html.imageName + '_' + gdc.imageCounter + fileType + '"');
 
   // Add border styling and close tag
-  gdc.writeStringToBuffer(' style="border: 1px solid #CDCDCD; max-width: 800px; max-height: 550px;" />');
-
-  // Update image counter for naming and uploads
-  gdc.imageCounter++;
-}
-
+  gdc.writeStringToBuffer(' style="border: 1px solid #CDCDCD; max-width: 800px; max-height: 550px;" />');  
+};
 
 gdc.isBullet = function(glyphType) {
   if (   glyphType === DocumentApp.GlyphType.BULLET
@@ -1844,7 +1820,11 @@ md.handleChildElement = function(child) {
       break;
     case INLINE_IMAGE:
       try {
-        gdc.handleImage(child);
+        if (gdc.eetechImages && gdc.isHTML) {
+        gdc.handleEETechImages(child);
+        } else {
+          gdc.handleImage(child);
+        }
       } catch(e) {
         gdc.errorCount++;
         gdc.log('\nERROR while handling inline image:\n' + e);
