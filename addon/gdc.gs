@@ -1918,7 +1918,6 @@ md.handleParagraph = function(para) {
         gdc.writeStringToBuffer('\n<p style="text-align: right">\n');
         // Not sure what this does?
         gdc.useHtml(); // TODO: check this!
-        //gdc.isRightAligned = true; // TODO: check this!
       } else if (gdc.isHTML && para.getAlignment() === DocumentApp.HorizontalAlignment.CENTER && para.isLeftToRight()) {
         gdc.writeStringToBuffer('\n<p style="text-align: center">\n');
         gdc.useHtml();
@@ -1951,7 +1950,6 @@ md.handleParagraph = function(para) {
   if (!para.isLeftToRight()) {
     gdc.writeStringToBuffer('<p dir="rtl">\n');
     gdc.useHtml();
-    gdc.isRightAligned = true;
   }
 
   // Go through children of this paragraph.
@@ -1962,12 +1960,6 @@ md.handleParagraph = function(para) {
 
   // In case we're in a mixed code span, reset the markup.
   gdc.resetMarkup();
-
-  // Is this necessary?
-  if (gdc.isRightAligned) {
-    gdc.writeStringToBuffer('</p>\n');
-    gdc.isRightAligned = false;
-  }
 
   // Now that we're at the end, close heading or paragraph if necessary.
   if (gdc.docType === gdc.docTypes.md && gdc.inHeading && !gdc.isHTML) {
