@@ -51,10 +51,11 @@ gdc.banner = '<!-- NOTICE: Google recently added tabs to Google Docs: '
 */
 var DEBUG = false;
 var LOG = false;
-var GDC_TITLE = 'Docs to Markdown'; // formerly GD2md-html, formerly gd2md-html
-var GDC_VERSION = '1.0β40'; // based on 1.0β39'
+var GDC_TITLE = 'EETech Docs to Markdown'; // formerly GD2md-html, formerly gd2md-html
+var GDC_VERSION = '1.0γ01'; // based on 1.0β33
 
 // Version notes: significant changes (latest on top). (files changed)
+// - 1.0γ01 (4 Oct. 2024): Added support for automatically generating the image link for Control.com. This is a significant fork that will not be merged into the main branch. Be careful about updates. (gdc, html, sidebar)
 /** - 1.0β40 (13 Oct 2024): 
     - Close list items before opening a new item. Close at the end of the list. (gdc, html)
     - Add support for Markdown checkbox lists. (gdc)
@@ -149,6 +150,13 @@ gdc.config = function(config) {
   if (config.recklessMode === true) {
     gdc.recklessMode = true;
     gdc.suppressInfo = true;
+  }
+  if (config.targetBlank === true) {
+    gdc.targetBlank = true;
+  }
+  if (config.eetechImages === true) {
+    gdc.eetechImages = true;
+    gdc.defaultImagePath = 'https://www.control.com/uploads/articles/';
   }
 };
 
@@ -269,6 +277,7 @@ gdc.mdMarkup = {
   olItem:       '1. ',
   cboxItem:     '- [ ] ',
   liClose:      '',
+  
 
   hr:           '<newline><newline>---<newline>',
 
@@ -348,6 +357,7 @@ gdc.htmlMarkup = {
 
   pOpen:       '\n<p>\n',
   pClose:      '\n</p>',
+  pBlank:      '\n<p>&nbsp;</p>',
   ulOpen:      '\n<ul>',
   ulClose:     '\n</ul>',
   olOpen:      '\n<ol>',
@@ -383,12 +393,14 @@ gdc.strikethrough = 's';
 gdc.underline = 'u';
 gdc.subscript = 'sub';
 gdc.superscript = 'sup';
+gdc.centered = 'center';
 
 // Constants for text alignment types.
 var
   NORMAL = DocumentApp.TextAlignment.NORMAL,
   SUBSCRIPT = DocumentApp.TextAlignment.SUBSCRIPT,
   SUPERSCRIPT = DocumentApp.TextAlignment.SUPERSCRIPT;
+  CENTERED = DocumentApp.HorizontalAlignment.CENTER;
 
 // Constants for the various element types. This is really for convenience.
 // These are types contained in BODY. See the enum DocumentApp.ElementType.
@@ -934,8 +946,13 @@ gdc.handleText = function(textElement) {
           gdc.setWriteBuf();
           offset = gdc.writeBuf(textElement, offset, urlEnd);
           gdc.writeStringToBuffer('](' + url + ')');
-      } else {  // Must be HTML, write standard link.        
+      } else if (gdc.isHTML && !gdc.targetBlank ) {  // If we aren't adding target="_blank".
         gdc.writeStringToBuffer('<a href="' + url + '">');
+        gdc.setWriteBuf();
+        offset = gdc.writeBuf(textElement, offset, urlEnd);
+        gdc.writeStringToBuffer('</a>');
+      }  else if (gdc.isHTML && gdc.targetBlank ) {  // If target blank is selected
+        gdc.writeStringToBuffer('<a target="_blank" href="' + url + '">');
         gdc.setWriteBuf();
         offset = gdc.writeBuf(textElement, offset, urlEnd);
         gdc.writeStringToBuffer('</a>');
@@ -991,18 +1008,10 @@ gdc.handleInlineDrawing = function() {
 };
 
 gdc.handleImage = function(imageElement) {
-  // Figure out image file information for the link.
-  var img = imageElement.asInlineImage();
-  var imgBlob = img.getBlob();
-  var contentType = imgBlob.getContentType();
-  var fileType = '';
-  if (contentType === 'image/jpeg') {
-    fileType = '.jpg';
-  } else if (contentType === 'image/png') {
-    fileType = '.png';
-  } else if (contentType === 'image/gif') {
-    fileType = '.gif';
-  }
+  // Put image markup here regardless of whether the image was stored or not.
+  gdc.hasImages = true; // So we can provide a note at the top.
+
+  var filetype = gdc.getFiletype(imageElement);
 
   // Create image path/file name: 
   // Note that Google Docs export does not necessarily put them in order!
@@ -1010,8 +1019,6 @@ gdc.handleImage = function(imageElement) {
   gdc.imageCounter++;
   var imagePath = gdc.defaultImagePath + 'image' + gdc.imageCounter +fileType;
 
-  // Put image markup here regardless of whether the image was stored or not.
-  gdc.hasImages = true; // So we can provide a note at the top.
   gdc.alert('inline image link here (to ' + imagePath
     + '). Store image on your image server and adjust path/filename/extension if necessary.');
   if (gdc.isHTML) {
@@ -1024,6 +1031,42 @@ gdc.handleImage = function(imageElement) {
   }
 };
 
+// Function for handling images for EETech upload
+gdc.handleEETechImages = function(imageElement) {
+  gdc.hasImages = true; // So we can provide a note at the top.
+
+  gdc.imageCounter++; // Update image counter at the outset so that we aren't starting from 0
+
+  // Get caption from the next line, trim the image attribution, and assign to the alternate text
+  var altText = imageElement.getParent().getNextSibling().getText();
+  altText = altText.substring(0, altText.indexOf('.') + 1);
+
+  // Way of grabbing filetype. This might actually work. 
+  var fileType = gdc.getFiletype(imageElement);
+
+  // Create image path. Not strictly necessary.
+  var imagePath = gdc.defaultImagePath + html.imageName + '_' + gdc.imageCounter + fileType;
+  
+  //  Open image tag, add alt text, add src information, image name, image counter, file type, additional styling, and close the tag. Phew. 
+  gdc.writeStringToBuffer('\n<img alt="'+ altText
+                          + '" src="' + imagePath
+                          + '" style="border: 1px solid #CDCDCD; max-width: 800px; max-height: 550px;" />');  
+};
+
+// Get and return the filetype
+gdc.getFiletype = function(img) {
+  var contentType = img.asInlineImage().getBlob().getContentType();
+  if (contentType === 'image/jpeg') {
+    return '.jpg';
+  } else if (contentType === 'image/png') {
+    return '.png';
+  } else if (contentType === 'image/gif') {
+    return '.gif';
+  } else {
+    return '';
+  }
+};
+
 gdc.isBullet = function(glyphType) {
   if (   glyphType === DocumentApp.GlyphType.BULLET
       || glyphType === DocumentApp.GlyphType.HOLLOW_BULLET
@@ -1032,6 +1075,7 @@ gdc.isBullet = function(glyphType) {
   } else if (glyphType === null) {
     // Since checkboxes currently return null and we know it is a list, this should work to find a checkbox item until Google adds another
     // See https://developers.google.com/apps-script/reference/document/glyph-type for glyph enum if this breaks.
+
     return 'checkbox';
   // Spelling out ordered list glyphs rather than relying on "everything but null"
   // } else if (  glyphType === DocumentApp.GlyphType.NUMBER
@@ -1833,7 +1877,11 @@ md.handleChildElement = function(child) {
       break;
     case INLINE_IMAGE:
       try {
-        gdc.handleImage(child);
+        if (gdc.eetechImages && gdc.isHTML) {
+        gdc.handleEETechImages(child);
+        } else {
+          gdc.handleImage(child);
+        }
       } catch(e) {
         gdc.errorCount++;
         gdc.log('\nERROR while handling inline image:\n' + e);
@@ -1867,7 +1915,7 @@ md.handleParagraph = function(para) {
   gdc.inHeading = false;
   gdc.state.isMixedCode = false;
   gdc.numChildren = para.getNumChildren();
-  // Do not bother with empty paragraphs (blank lines). (Except we preserve them for code blocks.)
+  // Preserve blank lines in body text as well as code blocks
   if (gdc.numChildren === 0) {
     if (gdc.inCodeBlock) {
       // Preserve newlines in code block (or single-cell table code block).
@@ -1875,6 +1923,9 @@ md.handleParagraph = function(para) {
         // Write a placeholder for newline: will replace after wrapping.
         gdc.writeStringToBuffer('<newline>');
       }
+    } else if (gdc.docType === gdc.docTypes.html) {
+      // Add blank lines in HTML by default
+      // gdc.writeStringToBuffer(gdc.htmlMarkup.pBlank);
     }
     return;
   }

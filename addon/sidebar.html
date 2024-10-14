@@ -137,7 +137,15 @@ Suppress info comments
 
 <label>
 <input type="checkbox" id="reckless_mode">
-Reckless mode (no info or inline alerts)
+Use reckless mode (no alerts)
+</label><br>
+<label>
+<input type="checkbox" id="target_blank">
+Add target="_blank" to HTML links
+</label><br>
+<label>
+<input type="checkbox" id="eetech_images">
+Use EETech image handling. 
 </label>
 
 <!-- Docs, bug link. -->
@@ -194,6 +202,8 @@ If you have questions for the Docs to Markdown community, use the Questions link
     config.renderHTMLTags = false;
     config.suppressInfo = false;
     config.recklessMode = false;
+    config.targetBlank = false;
+    config.eetechImages = false;
 
     // Config settings from UI.
     if (document.getElementById('italic_bold_underscores').checked) {
@@ -220,6 +230,12 @@ If you have questions for the Docs to Markdown community, use the Questions link
 
     if (document.getElementById('reckless_mode').checked) {
       config.recklessMode = true;
+    }
+    if (document.getElementById('target_blank').checked) {
+      config.targetBlank = true;
+    }
+    if (document.getElementById('eetech_images').checked) {
+      config.eetechImages = true;
     }
 };
     

@@ -40,12 +40,14 @@ var html = html || {
   underlineStart: '<span style="text-decoration:underline;">',
   underlineEnd:   '</span>',
 
-
   // I think we need to track these independently because the previous/next sibling won't always be a list item, 
   // thus not giving reliable nesting level. 
   listNestingLevel: 0,
   // This will also help us know if a list item needs to be closed before opening a new one. 
   inListItem: false
+
+  //Name to use for image generation in EETech add-on.
+  imageName: 'image'
 };
 
 html.tablePrefix = '  ';
@@ -57,6 +59,16 @@ html.doHtml = function(config) {
   gdc.config(config);
   // Get the body elements.
   var elements = gdc.getElements();
+
+  if(gdc.eetechImages) {
+      // Set image name if applicable
+      gdc.info += '\n\nUsing eetech images';
+      var userImageName = ui.prompt("Please enter the base image title. Include underscores. Do not include numbers or the extension.");
+      html.imageName = userImageName.getResponseText();
+      gdc.info += html.imageName;
+    } else {
+        gdc.info += '\n\nNot using eetech images';
+    }
 
   // Main loop to walk through all the document's child elements.
   for (var i = 0, z = elements.length; i < z; i++) {
@@ -76,7 +88,6 @@ html.doHtml = function(config) {
     gdc.info += ' NOTE: Images in exported zip file from Google Docs may not appear in ';
     gdc.info += ' the same order as they do in your doc. Please check the images!\n';
   }
-  
   if (gdc.hasFootnotes) {
     gdc.info += '\n* Footnote support in HTML is alpha: please check your footnotes.';
   }
@@ -192,7 +203,11 @@ html.handleChildElement = function(child) {
     case INLINE_DRAWING:
       break;
     case INLINE_IMAGE:
-      gdc.handleImage(child);
+      if (gdc.eetechImages && gdc.isHTML) {
+        gdc.handleEETechImages(child);
+      } else {
+        gdc.handleImage(child);
+      }
       break;
     case PAGE_BREAK:
       break;
@@ -538,7 +553,7 @@ html.handleListItem = function(listItem) {
   gdc.writeStringToBuffer(gdc.listPrefix + gdc.htmlMarkup.ulItem);
   html.inListItem = true;
   md.childLoop(listItem);
-  
+
   // Check to see if we should close this list.
   gdc.maybeCloseList(listItem);
 };
@@ -562,6 +577,7 @@ html.closeListItem = function() {
   gdc.writeStringToBuffer(gdc.markup.liClose);
   html.inListItem = false;
 };
+
 html.maybeOpenList = function (listItem) {
   // Do we need to open a list?
   var previous = listItem.getPreviousSibling();
@@ -569,6 +585,7 @@ html.maybeOpenList = function (listItem) {
   if (previous) {
     previousType = previous.getType();
   }
+
   // Open list if last sibling was not a list item.
   if (previousType !== DocumentApp.ElementType.LIST_ITEM) {
     // We need to check if a list is already opened first. Is a global variable to track list level the best solution here? 

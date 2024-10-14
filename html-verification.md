@@ -1,3 +1,5 @@
+<!-- Copy and paste the converted output. -->
+
 <!-- You have some errors, warnings, or alerts. If you are using reckless mode, turn it off to see inline alerts.
 * ERRORs: 0
 * WARNINGs: 2
@@ -9,7 +11,7 @@
 <p>
 This is a raw conversion from a Google Doc (For verification purposes: use HTML headings and Reckless mode options for both Markdown and HTML conversion, no other options).
 </p>
-<h1>MAIN: Docs to Markdown (GD2md-html)</h1>
+<h1>DEV VERIFICATION doc (1.0β27 base): Docs to Markdown (gd2md-html)</h1>
 
 
 <p>
@@ -131,6 +133,15 @@ And here is a bullet list:
 
 
 <ol>
+<li>First item</li>
+<li>Second item</li> 
+<ol> 
+<li>First nested item</li> 
+<li>Second nested item</li> 
+</ol>
+<li>Third item</li>
+</ol>
+<h3>Checkbox List</h3>
 
 <li>First item</li>
 
@@ -151,11 +162,9 @@ And here is a bullet list:
 You can have a code block within a list item, as long as you indent the code  (in the Doc) the same amount as the list: 
 </p>
 <ul>
-
 <li>A text item, followed by a code block that's indented and should be part of this item:
 
     
-
 <pre class="prettyprint">// A comment.
 some code;
   callFunction();
@@ -169,12 +178,13 @@ some code;
 <li>A nested list item with a command:
 
         
-
 <pre class="prettyprint">$ cat file | grep dog | wc
 </pre>
 
 </li> 
+  
 </ul></li> 
+
 </ul>
 <h3 id="lists-with-embedded-paragraphs">Lists with embedded paragraphs</h3>
 
@@ -183,7 +193,6 @@ some code;
 Note: Works for Markdown, still a known issue for HTML.
 </p>
 <ul>
-
 <li>A bullet list with an additional paragraph:
 <p>
 
@@ -197,6 +206,7 @@ Note: Works for Markdown, still a known issue for HTML.
 <li>Another item.</li> 
 <ul>
  
+
 <li>A nested item.
 <p>
 
@@ -204,7 +214,6 @@ Note: Works for Markdown, still a known issue for HTML.
 </p>
 
         
-
 <pre class="prettyprint">// Some code after a nested paragraph.
 callSomeFunction();
 </pre>
@@ -256,7 +265,6 @@ Because Google Docs does not have a definition list element, Docs to Markdown us
 </p>
 
 
-
 <pre class="prettyprint">?term on a line by itself (starting with a question mark)
 :Definition preceded by a colon.
 </pre>
@@ -268,7 +276,6 @@ Because Google Docs does not have a definition list element, Docs to Markdown us
 <p>
 <strong>Note</strong>: Github-flavored Markdown does not support Markdown definition-list syntax. You can select a definition list in a Google Doc and convert it to HTML if you’re using it in a GFM page.
 </p>
-
 
 
 <pre class="prettyprint">? term
@@ -318,7 +325,6 @@ A code block (note that by default, Docs to Markdown does <em>not</em> add langu
 </p>
 
 
-
 <pre class="prettyprint">package main
 
 import "fmt"
@@ -334,7 +340,6 @@ A single-cell table also becomes a code block:
 </p>
 
 
-
 <pre class="prettyprint">#include&lt;stdio.h>
 main()
 {
@@ -345,7 +350,6 @@ main()
 <p>
 If you have “smart quotes” in regular text, they should be preserved. But if you have any smart quotes in <code>"code"</code> or code blocks, Docs to Markdown removes them during the conversion:
 </p>
-
 
 
 <pre class="prettyprint">func main() {
@@ -365,7 +369,6 @@ For example, here is a code block that specifies <code>lang:c</code> on the firs
 </p>
 
 
-
 <pre class="prettyprint lang-c">#include&lt;stdio.h>
 main()
 {
@@ -377,7 +380,6 @@ main()
 <p>
 This also works in single-cell tables: here is a single-cell table that specifies <code>lang: java</code> on the first line:
 </p>
-
 
 
 <pre class="prettyprint lang-java">
@@ -396,7 +398,6 @@ Code with some embedded HTML tags that should be displayed, not interpreted:
 </p>
 
 
-
 <pre class="prettyprint lang-html">This is &lt;code>some code&lt;/code>
 and some &lt;strong>bold text&lt;/strong>.
 </pre>
@@ -405,7 +406,6 @@ and some &lt;strong>bold text&lt;/strong>.
 <p>
 A single-cell table with some HTML inside:
 </p>
-
 
 
 <pre class="prettyprint">This is some code
@@ -590,7 +590,6 @@ A LaTeX equation:
 </p>
 
 
-
 <pre class="prettyprint">$$e^{i\pi } = -1$$
 </pre>
 
@@ -612,8 +611,7 @@ They should appear as in this RTL paragraph:
 </p>
 <p>
 <p dir="rtl">
-هذه فقرة تجريبية </p>
-
+هذه فقرة تجريبية 
 </p>
 <h2 id="soft-line-breaks">Soft line-breaks</h2>
 
@@ -660,7 +658,6 @@ Apparently, it's not a problem in code blocks (the tags are never rendered):
 </p>
 
 
-
 <pre class="prettyprint">This is a code block with some &lt;html> tags.
 </pre>
 
@@ -668,7 +665,6 @@ Apparently, it's not a problem in code blocks (the tags are never rendered):
 <p>
 This is some regular text.
 </p>
-
 
 
 <pre class="prettyprint">This is a single-cell table code block with some &lt;html> tags.</pre>
@@ -705,8 +701,11 @@ Another paragraph with <strong>some bold text</strong>.
 This is a horizontal rule:
 </p>
 <hr>
+<h2>Blank Lines</h2>
+
+
 <p>
-This is a regular paragraph.
+Line 1
 </p>
 <h2 id="blank-lines">Blank Lines</h2>
 
@@ -744,7 +743,13 @@ Regular paragraph.
 <h2 id="bugs">Bugs</h2>
 
 
-<ul>
+<p style="text-align: right">
+Right aligned
+</p>
+<p style="text-align: center">
+Center aligned
+</p>
+<h5 style="text-align: center">Center Aligned Heading</h5>
 
 <li>Current open bugs: <a href="https://github.com/evbacher/gd2md-html/issues">https://github.com/evbacher/gd2md-html/issues</a> </li>
 
@@ -755,7 +760,15 @@ Regular paragraph.
 
 <p>
 This document ends with this regular paragraph (though footnotes may follow).
+
 </p>
+<h2 id="bugs">Bugs</h2>
+
+
+<ul>
+<li>Current open bugs: <a href="https://github.com/evbacher/gd2md-html/issues">https://github.com/evbacher/gd2md-html/issues</a> </li>
+<li>New bug or feature request: <a href="https://github.com/evbacher/gd2md-html/issues/new">https://github.com/evbacher/gd2md-html/issues/new</a>. Thanks for helping to make Docs to Markdown better!</li>
+</ul>
 
 <!-- Footnotes themselves at the bottom. -->
 
