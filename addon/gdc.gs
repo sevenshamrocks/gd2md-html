@@ -1,3 +1,5 @@
+// *** gdc.gs ***
+
 /*
  * Copyright 2020 Google LLC
  *
@@ -35,7 +37,18 @@
 
 // General note: be careful about putting newlines or whitespace into Markdown output.
 
+// The gdc object, which contains many important functions and values.
+var gdc = gdc || {};
+
 // NOTE: Check these before publishing! (and remove β if appropriate)
+// Use banner comment (very rarely) to communicate important information
+// (like recent bugs affecting output) at the top of the conversion test.
+gdc.banner = ''; // This is the general case.
+/*
+gdc.banner = '<!-- NOTICE: Google recently added tabs to Google Docs: '
+  + 'Internal links in converted text do not work now. '
+  + 'We are working on a fix. See News link for more details. -->\n\n';
+*/
 var DEBUG = false;
 var LOG = false;
 var GDC_TITLE = 'EETech Docs to Markdown'; // formerly GD2md-html, formerly gd2md-html
@@ -43,24 +56,35 @@ var GDC_VERSION = '1.0γ01'; // based on 1.0β33
 
 // Version notes: significant changes (latest on top). (files changed)
 // - 1.0γ01 (4 Oct. 2024): Added support for automatically generating the image link for Control.com. This is a significant fork that will not be merged into the main branch. Be careful about updates. (gdc, html, sidebar)
-// - 1.0β39 (2 Oct. 2024): Changed how closing of lists and list items are handled to fix nested lists and embedded paragraphs in HTML lists. (gdc, html)
-// - 1.0β38 (30 Sep. 2024): Added support for Markdown Checkboxes (gdc)
-// - 1.0β37 (30 Sep. 2024): Modified how center/right alignment is handled. Placed inside html.handleHeading (gdc, html)
-// - 1.0β36 (26 Sep. 2024): Moved the superscript/subscript open functions to be with the rest of the formatting functions. Moved maybeCloseAttrs() to the beginning of handleText() to ensure tags are closed before new tags are opened. (gdc)
-// - 1.0β35 (25 Sep. 2024): Add target blank option. Add blank lines to HTML. Added center-alignment for HTML. (sidebar, gdc, html)
+/** - 1.0β40 (13 Oct 2024): 
+    - Close list items before opening a new item. Close at the end of the list. (gdc, html)
+    - Add support for Markdown checkbox lists. (gdc)
+    - Fixes handling of superscript/subscript to close old styles before opening new style. Moves opening superscript/subscript later in process. (gdc)
+    - Added center/right alignment to HTML paragraph and heading handling. Will add text-align: center/right depending on paragraph formatting. (html, gdc)
+*/
+// - 1.0β39 (12 October 2024): Google Docs recently added a tab interface, which changes the TOC-generated id. This breaks internal links. This release fixes that bug. (gdc, html)
+// - 1.0β38 (21 Sept 2024): Italic/bold markup default is now */**: _/__ is now an option. Reckless mode now includes Suppress info comment (removed sidebar option too). Also add a News link to gd2md-html news page in sidebar. (sidebar, gdc)
+// - 1.0β37 (31 August 2024): Add a Questions link to gd2md-html Google group in sidebar (no functional changes).
+/** - 1.0β36 (26 April 2024): Update required permissions: set explicitly in appsscript.json. No code changes. Using these Oauth scopes:
+    "oauthScopes": [
+        "https://www.googleapis.com/auth/documents.currentonly",
+        "https://www.googleapis.com/auth/script.container.ui"
+        ],
+*/
+// - 1.0β35 (20 Nov. 2023): No info comments if "Suppress info comments selected." Also remove clipboard success text. If errors, there will be an informational error comment.
 // - 1.0β34 (12 Dec. 2022): Clarify note about TOC -- needs blue links to create intra-doc links). (gdc)
 // - 1.0β33 (8 Jan. 2022): Add reckless mode (no warnings or inline alerts). (sidebar, gdc, html)
 // - 1.0β32 (7 Jan. 2022): Make the Donate button more obvious. (gdc, sidebar)
 // - 1.0β31 (24 Aug. 2021): Don't contain <hr> in <p> for HTML. (gdc)
 // - 1.0β30 (1 July 2021): Reduce whitespace after list item (bullets, numbers) in Markdown. (gdc)
-// - 1.0β29: Handle partial selections correctly (expand to whole paragraph). (gdc)
-// - 1.0β28: Add Coffee button. UI change only. (gdc, sidebar)
-// - 1.0β27: Copy output to clipboard. Print success/error messages for clipboard output (see chromium bug 1074489). (gdc, sidebar)
-// - 1.0β26: Render soft line breaks correctly in HTML (<br> not &lt;br>). (gdc)
-// - 1.0β25: Use image path in this form: images/image1.png, images/image2.png, etc. Clean up old zip image code. (gdc,html,sidebar)
+// - 1.0β29 (2 Jul. 2020): Handle partial selections correctly (expand to whole paragraph). (gdc)
+// - 1.0β28 (2 Jul. 2020): Add Coffee button. UI change only. (gdc, sidebar)
+// - 1.0β27 (19 June 2020): Copy output to clipboard. Print success/error messages for clipboard output (see chromium bug 1074489). (gdc, sidebar)
+// - 1.0β26 (6 June 2020): Render soft line breaks correctly in HTML (<br> not &lt;br>). (gdc)
+// - 1.0β25 (1 June 2020): Use image path in this form: images/image1.png, images/image2.png, etc. Clean up old zip image code. (gdc,html,sidebar)
 // - 1.0β24: Correct a spelling error (s/Supress/Suppress). (gdc)
-// - 1.0β23: Copy converted output to the clipboard. Add option to suppress top comment. Add copyright comment, note about Docs link. (gdc, html, sidebar, addon)
-// - 1.0β22: Roll back font-change runs for now (still causing problems), but keep table note. (gdc)
+// - 1.0β23 (3 May 2020): Copy converted output to the clipboard. Add option to suppress top comment. Add copyright comment, note about Docs link. (gdc, html, sidebar, addon)
+// - 1.0β22 (21 April 2020: first open-source version): Roll back font-change runs for now (still causing problems), but keep table note. (gdc)
 // - 1.0β21: Add a note that tables are currently converted to HTML tables. No change to rendered conversion. (gdc, html)
 // - 1.0β20: Handle font-change runs with extra whitespace better (italic, bold, etc.). (gdc)
 // - 1.0β19: Fix for angle bracket at beginning of a line. Also: use doc title instead of URL in conversion comment. (gdc)
@@ -84,8 +108,6 @@ var GDC_VERSION = '1.0γ01'; // based on 1.0β33
 // - 1.0β2: Check for spurious 0-row table. Fix image path for placeholder links. (gdc, html)
 // - 1.0β: initial release of gd2md-html (addon, gdc, html, sidebar)
 
-var gdc = gdc || {};
-
 gdc.docTypes = {
   md: 'Markdown',
   html: 'HTML',
@@ -105,7 +127,11 @@ gdc.debug = function(text) {
 };
 
 // Set up any config from client side config object.
+// Don't change original config values.
 gdc.config = function(config) {
+  if (config.italicBoldUnderscores === true) {
+    gdc.italicBoldUnderscores = true;
+  }
   if (config.demoteHeadings === true) {
     gdc.demoteHeadings = true;
   }  
@@ -123,6 +149,7 @@ gdc.config = function(config) {
   }
   if (config.recklessMode === true) {
     gdc.recklessMode = true;
+    gdc.suppressInfo = true;
   }
   if (config.targetBlank === true) {
     gdc.targetBlank = true;
@@ -133,7 +160,7 @@ gdc.config = function(config) {
   }
 };
 
-// Setup for each conversion run.
+// Setup for each conversion run (called from addon.gs).
 gdc.init = function(docType) {
   gdc.docType = docType;
   
@@ -142,7 +169,8 @@ gdc.init = function(docType) {
   gdc.inCodeBlock = false;
 
   // Current markup to use. See gdc.useMarkdown(), gdc.useHtml().
-  gdc.markup = gdc.mdMarkup;
+  gdc.useMarkdown();
+  //gdc.markup = gdc.mdMarkup;
 
   gdc.startTime = new Date().getTime();
 
@@ -193,6 +221,7 @@ gdc.init = function(docType) {
 
 }; // end gdc.init()
 
+
 // Some flag defaults. (Should these be in state object?)
 gdc.isHTML = false;
 gdc.isTable = false;
@@ -228,8 +257,8 @@ gdc.mdMarkup = {
   // Font changes
   codeOpen:    '`',
   codeClose:   '`',
-  italicOpen:  '_',
-  italicClose: '_',
+  italicOpen:  '*',
+  italicClose: '*',
   boldOpen:    '**',
   boldClose:   '**',
   strikethroughOpen:  '~~',
@@ -336,7 +365,6 @@ gdc.htmlMarkup = {
   ulItem:      '\n<li>',
   olItem:      '\n<li>',
   liClose:     '</li>',
-  
 
   hr:           '\n<hr>',
 
@@ -822,6 +850,7 @@ gdc.handleText = function(textElement) {
     // Open attributes (in alphabetical order).
     // Open bold.
     if (!gdc.isBold && bold) {
+      // Check for leading or trailing space.
       gdc.isBold = true;
       gdc.openAttrs.push(gdc.bold);
       gdc.writeStringToBuffer(gdc.markup.boldOpen);
@@ -844,12 +873,14 @@ gdc.handleText = function(textElement) {
     }
     // Open italic.
     if (!gdc.isItalic && italic) {
+      // Check for leading or trailing space.
       gdc.isItalic = true;
       gdc.openAttrs.push(gdc.italic);
       gdc.writeStringToBuffer(gdc.markup.italicOpen);
     }
     // Open strikethrough.    
     if (!gdc.isStrikethrough && strikethrough) {
+      // Check for leading or trailing space.
       gdc.isStrikethrough = true;
       gdc.openAttrs.push(gdc.strikethrough);
       gdc.writeStringToBuffer(gdc.markup.strikethroughOpen);
@@ -868,6 +899,7 @@ gdc.handleText = function(textElement) {
       gdc.openAttrs.push(gdc.superscript);
       gdc.writeStringToBuffer(gdc.markup.superOpen);
     }
+
     // Open underline (uses HTML always). This should really be discouraged!
     if (!gdc.isUnderline && underline && !url) {
       gdc.isUnderline = true;
@@ -886,9 +918,14 @@ gdc.handleText = function(textElement) {
       var linkText = textElement.getText().substring(offset, urlEnd);
 
       // Check for links to #heading* (internal links).
-      // Replace hashed link with corresponding id link (from generated TOC).
-      if ((/^#heading/).test(url)) {
+      // If so, replace hashed link with corresponding id link (from generated TOC).
+      // This is where we will test to see if this is an internal link of the form:
+      // ?tab=t.0#heading=h.wr02dnpl3pog
+      // Remove any tab information from the URL. This is the hashUrl without tab info.
+      url = url.replace(/\?tab=t\.\d+/gm, '');
+      if ((/#heading/).test(url)) {
         gdc.isIntraDocLink = true;
+        // Link to the unique ID identified by the url.
         if (gdc.headingLinks[url]) {
           url = '#' + gdc.headingLinks[url];
         } else {
@@ -1002,7 +1039,7 @@ gdc.handleEETechImages = function(imageElement) {
 
   // Get caption from the next line, trim the image attribution, and assign to the alternate text
   var altText = imageElement.getParent().getNextSibling().getText();
-  altText = altText.substring(0, altText.indexOf('.') + 1);
+  altText = altText.substring(0, altText.lastIndexOf('.') + 1);
 
   // Way of grabbing filetype. This might actually work. 
   var fileType = gdc.getFiletype(imageElement);
@@ -1037,6 +1074,8 @@ gdc.isBullet = function(glyphType) {
       return 'bullet';
   } else if (glyphType === null) {
     // Since checkboxes currently return null and we know it is a list, this should work to find a checkbox item until Google adds another
+    // See https://developers.google.com/apps-script/reference/document/glyph-type for glyph enum if this breaks.
+
     return 'checkbox';
   // Spelling out ordered list glyphs rather than relying on "everything but null"
   // } else if (  glyphType === DocumentApp.GlyphType.NUMBER
@@ -1050,9 +1089,17 @@ gdc.isBullet = function(glyphType) {
 };
 
 // Sets appropriate markup object.
-gdc.useMarkdown = function(){
+gdc.useMarkdown = function() {
   gdc.isHTML = false;
   gdc.markup = gdc.mdMarkup;
+
+  if (gdc.italicBoldUnderscores) {
+    // * and ** are the default.
+    gdc.markup.italicOpen = '_';
+    gdc.markup.italicClose = '_';
+    gdc.markup.boldOpen = '__';
+    gdc.markup.boldClose = '__';
+  }
 };
 gdc.useHtml = function(){
   gdc.isHTML = true;
@@ -1246,17 +1293,16 @@ gdc.getUrlEnd = function(textElement, offset) {
 gdc.maybeCloseList = function(el) {
   // Check to see if we should close this list.
   var next = el.getNextSibling();
-  // var nestingLevel = gdc.nestLevel;
-  // var nestingLevel = el.getNestingLevel();
   // Not sure why exactly, but sometimes next is null, breaking the script.
   if (!next) { return; }
   if (next.getType() == DocumentApp.ElementType.LIST_ITEM) {
-    // Add one because nesting level starts at 0? Is this the best way of doing this?
-    var nextNestingLevel = next.getNestingLevel() + 1;
+  // Add one because nesting level starts at 0? Is this the best way of doing this?
+  var nextNestingLevel = next.getNestingLevel() + 1;
     
     // This is closer to being correct with list closing, but we also need to
     // keep state in case there are paragraphs embedded in the list.
     if (gdc.isHTML) {
+      // Maybe there is a cleaner way to track nesting level. I've found that the document nesting level isn't accurate. 
       for (var nest = html.listNestingLevel; nest > nextNestingLevel; nest--) {
         html.closeList();
       }
@@ -1347,7 +1393,14 @@ gdc.maybeCloseAttrs = function(currentAttrs) {
       gdc.openAttrs.pop();
       keepChecking = true;
       if (!gdc.inCodeBlock) {
+        // Check to see if we're in a mixed font span (mixed code with other font styles).
+        // If so, use HTML (or mixed)
+        if (gdc.isMixedCode) {
+          gdc.useMixed();
+        }
         gdc.writeStringToBuffer(gdc.markup.codeClose);
+        // We probably don't want to continue using mixed markup.
+        gdc.resetMarkup
       }
     }
     // Close bold.
@@ -1405,6 +1458,7 @@ gdc.closeAllAttrs = function() {
 };
 
 // Grab links to headings from TOC, if present.
+// Heading URLs are used for internal links.
 // Also add [TOC] if Markdown (and not a partial selection).
 gdc.handleTOC = function(toc) {
   gdc.hasToc = true;
@@ -1417,9 +1471,14 @@ gdc.handleTOC = function(toc) {
         text = heading.getText(),
         id = gdc.makeId(text),
         url = heading.getLinkUrl();
+        // hashUrl and hashId remove the tab info before the #heading...
+        hashUrl = url.replace(/\?tab=t\.\d+/gm, '');
+        hashId = id.replace(/\?tab=t\.\d+/gm, ''); // Note: id doesn't have tab info.
+        //DEBUG code for internal links.
+        //gdc.writeStringToBuffer('\ntext: ' + text + '\nid: '+ id + '\nurl: ' + url + '\nhashId: ' + hashId + '\nhashUrl: ' + hashUrl + '\n\n')
 
-    // Save this url and id for later.
-    gdc.headingLinks[url] = id;
+    // Save this url and id for later. The hash url is unique.
+    gdc.headingLinks[hashUrl] = id;
     gdc.headingIds[text] = id;
   }
 };
@@ -1434,9 +1493,12 @@ gdc.makeId = function(headingText) {
   id = id.replace(/^-+/, '').replace(/-+$/, '').replace(/-{2,}/g, '-');
   id = id.toLowerCase();
 
-  if (!gdc.hasToc) {
+  /* Handle duplicate headings: needs work still.
+  if (gdc.hasToc) {
     id = gdc.dupHeadingCheck(id);
   }
+  */
+
   return id;
 };
 
@@ -1685,7 +1747,10 @@ gdc.topComment = '<!-----\n\n'
 ;
   
 md.doMarkdown = function(config) {
+  // Call config first!
   gdc.config(config);
+  gdc.useMarkdown();
+
   // Get the body elements.
   var elements = gdc.getElements();
 
@@ -1707,10 +1772,10 @@ md.doMarkdown = function(config) {
   gdc.info = '\n\nConversion time: ' + eTime + ' seconds.\n' + gdc.info;
   
   // Note ERRORs or WARNINGs or ALERTs at the top if there are any.
-  gdc.errorSummary = 'Yay, no errors, warnings, or alerts!'
+  gdc.errorSummary = '';
   if ( gdc.errorCount || gdc.warningCount || gdc.alertCount ) {
     gdc.errorSummary = 'You have some errors, warnings, or alerts. '
-      + 'If you are using reckless mode, turn it off to see inline alerts.'
+      + 'If you are using reckless mode, turn it off to see useful information and inline alerts.'
       + '\n* ERRORs: '   + gdc.errorCount
       + '\n* WARNINGs: ' + gdc.warningCount
       + '\n* ALERTS: '   + gdc.alertCount;
@@ -1731,10 +1796,13 @@ md.doMarkdown = function(config) {
   // Add info comment if desired.
   if (!gdc.suppressInfo) {
     gdc.out = gdc.info + '\n----->\n\n' + gdc.out;
-  } else if (gdc.suppressInfo && gdc.errorSummary) {
+  } else if (gdc.suppressInfo && gdc.errorSummary !== '') {
     // But notify if there are errors.
     gdc.out = '<!-- ' + gdc.errorSummary + ' -->\n' + gdc.out;
   }
+
+  // Always include the banner.
+  gdc.out = gdc.banner + gdc.out;
   
   return gdc.out;
 };
@@ -1857,7 +1925,7 @@ md.handleParagraph = function(para) {
       }
     } else if (gdc.docType === gdc.docTypes.html) {
       // Add blank lines in HTML by default
-      // gdc.writeStringToBuffer(gdc.htmlMarkup.pBlank);
+      gdc.writeStringToBuffer(gdc.htmlMarkup.pBlank);
     }
     return;
   }
@@ -1872,7 +1940,7 @@ md.handleParagraph = function(para) {
   // blank lines.
   html.checkList();
 
-// Check to see if this is a constant-width paragraph (code block signal).
+  // Check to see if this is a constant-width paragraph (code block signal).
   if (gdc.isCodeLine(para) && !gdc.isTable) {
     // If we're starting a code block, open it up.
     if (!gdc.inCodeBlock) {
@@ -1930,13 +1998,14 @@ md.handleParagraph = function(para) {
       if (gdc.isHTML && para.getAlignment() === DocumentApp.HorizontalAlignment.RIGHT && para.isLeftToRight()) {
         gdc.writeStringToBuffer('\n<p style="text-align: right">\n');
         // Not sure what this does?
-        gdc.useHtml();
+        gdc.useHtml(); // TODO: check this!
+        //gdc.isRightAligned = true; // TODO: check this!
       } else if (gdc.isHTML && para.getAlignment() === DocumentApp.HorizontalAlignment.CENTER && para.isLeftToRight()) {
         gdc.writeStringToBuffer('\n<p style="text-align: center">\n');
         gdc.useHtml();
       } else {
         gdc.writeStringToBuffer(gdc.markup.pOpen);
-      }
+      } 
     }  
 
     // We want paragraphs after the first text in a table cell.
@@ -1975,9 +2044,16 @@ md.handleParagraph = function(para) {
   // In case we're in a mixed code span, reset the markup.
   gdc.resetMarkup();
 
+  // Is this necessary?
+  if (gdc.isRightAligned) {
+    gdc.writeStringToBuffer('</p>\n');
+    gdc.isRightAligned = false;
+  }
+
   // Now that we're at the end, close heading or paragraph if necessary.
   if (gdc.docType === gdc.docTypes.md && gdc.inHeading && !gdc.isHTML) {
     // Trim heading text to use as hash key (we trim it in gdc.makeId() ).
+    // NOTE: This doesn't deal with duplicate headings (yet).
     var id = gdc.headingIds[para.getText().trim()];
     if (id && !gdc.htmlHeadings) {
       gdc.writeStringToBuffer(' {#' + id + '}');
@@ -2005,7 +2081,8 @@ md.handleParagraph = function(para) {
       gdc.writeStringToBuffer(gdc.markup.pClose);
     }
   }
-  
+
+  // We also want to check here. 
   gdc.maybeCloseList(para);
 }; // end md.handleParagraph
 
@@ -2106,10 +2183,11 @@ md.handleListItem = function(listItem) {
     // Increment ordered list counter.
     prefix += counter + '. ';
     // Alternative is to use 1. for all ordered list items, but less readable.
-    //prefix += gdc.markup.olItem;
+    // prefix += gdc.markup.olItem;
   } else if (gdc.isBullet(glyphType) === 'checkbox') { // Maybe it's unecessary to spell out and just leave as an "else" statement.
     prefix += gdc.markup.cboxItem
   }
+
   gdc.writeStringToBuffer(prefix);
 
   // Prefix set, now deal with the content.
