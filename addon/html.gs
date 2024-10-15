@@ -1,3 +1,5 @@
+// *** html.gs ***
+
 /*
  * Copyright 2020 Google LLC
  *
@@ -38,8 +40,10 @@ var html = html || {
   underlineStart: '<span style="text-decoration:underline;">',
   underlineEnd:   '</span>',
 
-  // I think we need to track these independently because the previous/next sibling won't always be a list item, thus not giving reliable nesting level. 
+  // I think we need to track these independently because the previous/next sibling won't always be a list item, 
+  // thus not giving reliable nesting level. 
   listNestingLevel: 0,
+  // This will also help us know if a list item needs to be closed before opening a new one. 
   inListItem: false,
 
   //Name to use for image generation in EETech add-on.
@@ -93,7 +97,7 @@ html.doHtml = function(config) {
   gdc.info = '\n\nConversion time: ' + eTime + ' seconds.\n' + gdc.info;
 
   // Note ERRORs or WARNINGs or ALERTs at the top if there are any.
-  gdc.errorSummary = 'Yay, no errors, warnings, or alerts!'
+  gdc.errorSummary = '';
   if ( gdc.errorCount || gdc.warningCount || gdc.alertCount ) {
     gdc.errorSummary = 'You have some errors, warnings, or alerts. '
       + 'If you are using reckless mode, turn it off to see inline alerts.'
@@ -117,10 +121,14 @@ html.doHtml = function(config) {
   // Add info comment if desired.
   if (!gdc.suppressInfo) {
     gdc.out = gdc.info + '\n----->\n\n' + gdc.out;
-  } else if (gdc.suppressInfo && gdc.errorSummary) {
+  } else if (gdc.suppressInfo && gdc.errorSummary !== '') {
     // But notify if there are errors.
     gdc.out = '<!-- ' + gdc.errorSummary + ' -->\n' + gdc.out;
   }
+
+  // Always include the banner.
+  gdc.out = gdc.banner + gdc.out;
+
   
   // Output content.
   gdc.flushBuffer();
@@ -432,7 +440,7 @@ html.handleHeading = function(heading, para) {
   if (id) {
     gdc.writeStringToBuffer(' id="' + gdc.headingIds[para.getText()] + '"');
   }
-  
+
   // Check for right alignment before closing the tag
   if (para.getAlignment() === DocumentApp.HorizontalAlignment.RIGHT && para.isLeftToRight()) {
     gdc.writeStringToBuffer(' style="text-align: right"');
@@ -560,7 +568,7 @@ html.checkList = function() {
 };
 // Closes list item. Not necessary for Markdown.
 html.closeListItem = function() {
-  // Make sure to close codeblocks before closing list items. 
+  // Check if we're in a code block and end if so. Always close codeblocks before closing list items. 
   if (gdc.inCodeBlock) {
     gdc.writeStringToBuffer(html.closeCodeBlock);
     gdc.inCodeBlock = false;
@@ -580,20 +588,23 @@ html.maybeOpenList = function (listItem) {
 
   // Open list if last sibling was not a list item.
   if (previousType !== DocumentApp.ElementType.LIST_ITEM) {
-    // Needs to check if a list is already opened first. Is a global variable to track list level the best solution here? The previous sibling won't return list level if it's a paragraph. 
+    // We need to check if a list is already opened first. Is a global variable to track list level the best solution here? 
+    // The previous sibling won't return the list level if it's a paragraph. 
+
     // Could we also use:
     // if (html.nestingLevel == 0 && gdc.isList == false) {
+
     if (html.nestingLevel >= html.listNestingLevel) {
       html.openList();
     } 
-  } else
-  if (previousType == DocumentApp.ElementType.LIST_ITEM) {
+  } else if (previousType == DocumentApp.ElementType.LIST_ITEM) {
     // Open a new list if nesting level increases.
-    if (html.nestingLevel > previous.getNestingLevel()) {
-    html.openList();
-    }
+      if (html.nestingLevel > previous.getNestingLevel()) {
+      html.openList();
+      }
   }
 };
+
 // Open list and save current list type to stack.
 html.openList = function() {
   gdc.isList = true;
@@ -612,9 +623,10 @@ html.openList = function() {
   }
   html.listNestingLevel++;
 };
+
 // Close list and remove it's list type from the stack.
 html.closeList = function() {
-  // Close the last item of the list. This will always need to be called. 
+  // Close the last item of the list. This will always need to be called.
   html.closeListItem();
 
   if (html.listStack[0] === gdc.ul) {
@@ -630,6 +642,7 @@ html.closeList = function() {
     gdc.isList = false;
   }
 };
+
 // But what about a table that's in a list item?
 html.closeAllLists = function() {
   var list = html.listStack[0];
